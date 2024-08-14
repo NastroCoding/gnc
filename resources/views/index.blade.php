@@ -132,14 +132,63 @@
             color: #edf2f7;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
         }
+
+
+        .persona-intro-shape {
+            position: absolute;
+            background-color: #000000;
+            transform: skew(-10deg);
+        }
+
+        .transition-panel {
+            position: fixed;
+            background-color: #000000;
+            transform: skew(-10deg);
+            z-index: 70;
+            left: -160%;
+            /* Start off-screen to the left */
+            width: 150%;
+            height: 33.4vh;
+            /* Slightly taller to avoid gaps */
+        }
+
+        #intro-shapes-container {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        #intro-content {
+            position: relative;
+            z-index: 2;
+        }
     </style>
 </head>
 
-<body>
-    <div class="welcome-screen" id="welcome-screen">
-        <p class="animate__animated animate__slideInDown animate__fast text-5xl">Choose Your Character!</p>
-        <button id="continue-button" class="animate__animated animate__slideInDown">Continue</button>
+<body class="bg-gradient-to-br from-gray-800 to-gray-900 text-white font-['P5'] overflow-hidden">
+    <div id="persona-intro"
+        class="fixed inset-0 bg-red-600 z-50 flex flex-col justify-center items-center overflow-hidden">
+        <div id="intro-shapes-container"></div>
+        <div id="intro-content" class="flex flex-col items-center">
+            <div id="persona-intro-text"
+                class="font-['HeavyHea'] text-6xl text-white transform -skew-x-10 opacity-0 mb-8">
+                Choose Your Character
+            </div>
+            <button id="persona-continue-btn"
+                class="font-['P5'] text-2xl text-white bg-black px-6 py-3 cursor-pointer transform -skew-x-10 transition-colors duration-300 hover:bg-gray-800 opacity-0">
+                Continue
+            </button>
+        </div>
     </div>
+
+    <!-- Transition panels -->
+    <div id="transition-container" class="fixed inset-0 z-[60] pointer-events-none">
+        <div class="transition-panel" style="top: 0;"></div>
+        <div class="transition-panel" style="top: 33.33%;"></div>
+        <div class="transition-panel" style="top: 66.66%;"></div>
+    </div>
+
     <div class="preview-section">
         <img id="preview-image" src="/api/placeholder/400/600" alt="Select a character"
             class="max-w-full max-h-full object-contain" />
@@ -208,37 +257,90 @@
                 });
             }
 
-            function handleSelect(card) {
-                const characterName = card.getAttribute("data-character");
-                selectSound.play();
-                console.log(`Selected character: ${characterName}`);
-                // Add your character selection logic here
+            const introElement = document.getElementById("persona-intro");
+            const introTextElement = document.getElementById("persona-intro-text");
+            const continueBtnElement = document.getElementById("persona-continue-btn");
+            const transitionContainer = document.getElementById("transition-container");
+            const transitionPanels = document.querySelectorAll(".transition-panel");
+            const introShapesContainer = document.getElementById("intro-shapes-container");
+
+            function createIntroShape() {
+                const shape = document.createElement("div");
+                shape.classList.add("persona-intro-shape");
+                shape.style.width = `${Math.random() * 100 + 50}px`;
+                shape.style.height = `${Math.random() * 100 + 50}px`;
+                shape.style.left = `${Math.random() * 100}%`;
+                shape.style.top = `${Math.random() * 100}%`;
+                return shape;
             }
 
-            // Initial animation
-            anime({
-                targets: ".character-card",
-                translateX: [100, 0],
-                opacity: [0, 1],
-                delay: anime.stagger(100),
-                easing: "easeOutQuad",
-                duration: 800,
+            for (let i = 0; i < 10; i++) {
+                introShapesContainer.appendChild(createIntroShape());
+            }
+
+            gsap.to(".persona-intro-shape", {
+                x: () => `${Math.random() * 200 - 100}%`,
+                y: () => `${Math.random() * 200 - 100}%`,
+                rotation: () => Math.random() * 360,
+                duration: 1.5,
+                ease: "power2.inOut",
+                stagger: 0.1
             });
 
-            // Fade out welcome screen on button click
-            document
-                .getElementById("continue-button")
-                .addEventListener("click", () => {
-                    gsap.to("#welcome-screen", {
-                        opacity: 0,
-                        duration: 1,
-                        onComplete: () => {
-                            document.querySelector("#welcome-screen").style.display =
-                                "none";
-                            document.body.style.overflow = "auto";
-                        },
-                    });
+            gsap.to(introTextElement, {
+                opacity: 1,
+                duration: 0.5,
+                delay: 0.5
+            });
+
+            gsap.to(continueBtnElement, {
+                opacity: 1,
+                duration: 0.5,
+                delay: 1
+            });
+
+            continueBtnElement.addEventListener("click", () => {
+                gsap.to(transitionPanels, {
+                    left: "0%",
+                    duration: 0.75,
+                    ease: "power2.inOut",
+                    stagger: 0.1,
+                    onComplete: () => {
+                        introElement.style.display = "none";
+
+                        gsap.to(transitionPanels, {
+                            left: "100%",
+                            duration: 0.75,
+                            ease: "power2.inOut",
+                            stagger: 0.1,
+                            onComplete: () => {
+                                document.body.classList.remove("overflow-hidden");
+
+                                gsap.set(transitionPanels, {
+                                    left: "-150%"
+                                });
+                            }
+                        });
+                    }
                 });
+            });
+
+        function handleSelect(card) {
+            const characterName = card.getAttribute("data-character");
+            selectSound.play();
+            console.log(`Selected character: ${characterName}`);
+            // Add your character selection logic here
+        }
+
+        // Initial animation
+        anime({
+        targets: ".character-card",
+        translateX: [100, 0],
+        opacity: [0, 1],
+        delay: anime.stagger(100),
+        easing: "easeOutQuad",
+        duration: 800,
+        });
         });
     </script>
 </body>
